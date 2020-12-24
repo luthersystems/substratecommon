@@ -1,15 +1,20 @@
 package substratecommon
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/rpc"
 	"os"
 	"os/exec"
+	"time"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 
@@ -23,7 +28,7 @@ type ConcreteRequestOptions struct {
 	Endpoint            string
 	ID                  string
 	AuthToken           string
-	Params              interface{}
+	Params              []byte
 	Transient           map[string][]byte
 	Timestamp           string
 	MSPFilter           []string
@@ -44,7 +49,7 @@ type RequestOptions struct {
 	Endpoint            string
 	ID                  string
 	AuthToken           string
-	Params              interface{}
+	Params              interface{} // not flat!
 	Transient           map[string][]byte
 	Target              *interface{}                 // not flat!
 	TimestampGenerator  func(context.Context) string // not flat!
@@ -235,12 +240,30 @@ func WithCCFetchURLProxy(proxy string) Config {
 	})
 }
 
+func tsg(context context.Context, tg func(context.Context) string) string {
+	if tg != nil {
+		return tg(context)
+	} else {
+		return time.Now().UTC().Format(time.RFC3339)
+	}
+}
+
 // FlattenOptions will flatten a list of config options.
-func FlattenOptions(configs ...Config) *ConcreteRequestOptions {
-	opt := &RequestOptions{}
+func FlattenOptions(configs ...Config) (*ConcreteRequestOptions, error) {
+	opt := &RequestOptions{
+		LogFields: logrus.Fields{},
+		Headers:   map[string]string{},
+		Transient: map[string][]byte{},
+		Params:    []interface{}{},
+	}
 
 	for _, config := range configs {
 		config(opt)
+	}
+
+	params, err := json.Marshal(opt.Params)
+	if err != nil {
+		return nil, err
 	}
 
 	return &ConcreteRequestOptions{
@@ -248,9 +271,9 @@ func FlattenOptions(configs ...Config) *ConcreteRequestOptions {
 		Endpoint:            opt.Endpoint,
 		ID:                  opt.ID,
 		AuthToken:           opt.AuthToken,
-		Params:              opt.Params,
+		Params:              params,
 		Transient:           opt.Transient,
-		Timestamp:           opt.TimestampGenerator(opt.Ctx),
+		Timestamp:           tsg(opt.Ctx, opt.TimestampGenerator),
 		MSPFilter:           opt.MSPFilter,
 		MinEndorsers:        opt.MinEndorsers,
 		Creator:             opt.Creator,
@@ -258,7 +281,7 @@ func FlattenOptions(configs ...Config) *ConcreteRequestOptions {
 		DisableWritePolling: opt.DisableWritePolling,
 		CCFetchURLDowngrade: opt.CCFetchURLDowngrade,
 		CCFetchURLProxy:     opt.CCFetchURLProxy,
-	}
+	}, nil
 }
 
 // Error represents a possible error. IsTimeoutError indicates whether
@@ -280,6 +303,15 @@ type Response struct {
 	ErrorMessage  string
 	ErrorJSON     []byte
 	TransactionID string
+}
+
+// UnmarshalTo unmarshals the response's result to dst.
+func (s *Response) UnmarshalTo(dst interface{}) error {
+	message, ok := dst.(proto.Message)
+	if ok {
+		return jsonpb.Unmarshal(bytes.NewReader([]byte(s.ResultJSON)), message)
+	}
+	return json.Unmarshal([]byte(s.ResultJSON), dst)
 }
 
 // Transaction represents summary information about a transaction.
