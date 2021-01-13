@@ -215,7 +215,7 @@ func Test001(t *testing.T) {
 
 			return nil
 		},
-		substratecommon.ConnectWithCommand(os.Getenv("SUBSTRATE_PLUGIN_FILE")))
+		substratecommon.ConnectWithCommand(os.Getenv("SUBSTRATEHCP_FILE")))
 	if err != nil {
 		t.Fatal(err)
 	}
