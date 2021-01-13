@@ -331,7 +331,7 @@ func TestPrivate(t *testing.T) {
 
 			return siwm.CloseMock()
 		},
-		substratecommon.ConnectWithCommand(os.Getenv("SUBSTRATE_PLUGIN_FILE")))
+		substratecommon.ConnectWithCommand(os.Getenv("SUBSTRATEHCP_FILE")))
 	if err != nil {
 		t.Fatal(err)
 	}

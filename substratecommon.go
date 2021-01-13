@@ -800,8 +800,13 @@ func ConnectWithAttachStdamp(attachStdamp io.Writer) func(co *connectOption) err
 	})
 }
 
-// Connect connects to a plugin.
-func Connect(user func(Substrate) error, opts ...ConnectOption) error {
+type SubstrateConnection struct {
+	client    *plugin.Client
+	substrate Substrate
+}
+
+// NewSubstrateConnection connects to a plugin in the background.
+func NewSubstrateConnection(opts ...ConnectOption) (*SubstrateConnection, error) {
 	co := &connectOption{level: hclog.Debug, attachStdamp: nil}
 
 	for _, opt := range opts {
@@ -827,7 +832,6 @@ func Connect(user func(Substrate) error, opts ...ConnectOption) error {
 		SyncStdout:      co.attachStdamp,
 		SyncStderr:      co.attachStdamp,
 	})
-	defer client.Kill()
 
 	// Connect via RPC
 	rpcClient, err := client.Client()
@@ -845,5 +849,34 @@ func Connect(user func(Substrate) error, opts ...ConnectOption) error {
 	// fact over an RPC connection.
 	substrate := raw.(Substrate)
 
-	return user(substrate)
+	return &SubstrateConnection{client: client, substrate: substrate}, nil
+}
+
+// GetSubstrate returns the Substrate interface associated with a
+// connection.
+func (s *SubstrateConnection) GetSubstrate() Substrate {
+	return s.substrate
+}
+
+// Close closes a connection.
+func (s *SubstrateConnection) Close() error {
+	s.client.Kill()
+	return nil
+}
+
+// Connect connects to a plugin synchronously; all operations on the
+// Substrate interface must be performed from within the passed
+// closure.
+func Connect(user func(Substrate) error, opts ...ConnectOption) error {
+	conn, err := NewSubstrateConnection(opts...)
+	if err != nil {
+		return err
+	}
+
+	err = user(conn.GetSubstrate())
+	if err != nil {
+		return err
+	}
+
+	return conn.Close()
 }
