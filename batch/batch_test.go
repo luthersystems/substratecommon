@@ -107,7 +107,7 @@ func Test001(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			driver := batch.NewDriver(siwm.Upcast(), batch.WithLog(log), batch.WithLogField("TESTFIELD", "TESTVALUE"))
+			driver := batch.NewDriver(siwm, batch.WithLog(log), batch.WithLogField("TESTFIELD", "TESTVALUE"))
 
 			lastReceivedMessage := "none"
 

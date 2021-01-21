@@ -1,102 +1,208 @@
 package substratewrapper
 
 import (
+	"io"
+
 	"github.com/luthersystems/substratecommon"
 )
 
-type SubstrateWrapper struct {
+type SubstrateWrapper interface {
+	NewRPC() (SubstrateInstanceWrapperRPC, error)
+	NewMockFrom(name string, phylumVersion string, blob []byte) (SubstrateInstanceWrapperMock, error)
+}
+
+type SubstrateInstanceWrapperCommon interface {
+	io.Closer
+	NewCoherent() SubstrateInstanceWrapperCommon
+	IsTimeoutError(err error) bool
+	Init(phylum string, configs ...substratecommon.Config) error
+	Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error)
+	QueryInfo(configs ...substratecommon.Config) (uint64, error)
+	QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error)
+}
+
+type SubstrateInstanceWrapperRPC interface {
+	SubstrateInstanceWrapperCommon
+}
+
+type SubstrateInstanceWrapperMock interface {
+	SubstrateInstanceWrapperCommon
+	SetCreatorWithAttributes(creator string, attrs map[string]string) error
+	Snapshot() ([]byte, error)
+}
+
+type substrateWrapper struct {
 	substrate substratecommon.Substrate
 }
 
-type SubstrateInstanceWrapperCommon struct {
+func NewSubstrateWrapper(substrate substratecommon.Substrate) SubstrateWrapper {
+	return &substrateWrapper{substrate: substrate}
+}
+
+type substrateInstanceWrapperRPC struct {
 	substrate substratecommon.Substrate
 	tag       string
 }
 
-type SubstrateInstanceWrapperRPC struct {
-	SubstrateInstanceWrapperCommon
-}
-
-type SubstrateInstanceWrapperMock struct {
-	SubstrateInstanceWrapperCommon
-}
-
-func NewSubstrateWrapper(substrate substratecommon.Substrate) *SubstrateWrapper {
-	return &SubstrateWrapper{substrate: substrate}
-}
-
-func (sw *SubstrateWrapper) NewRPC() (*SubstrateInstanceWrapperRPC, error) {
+func (sw *substrateWrapper) NewRPC() (SubstrateInstanceWrapperRPC, error) {
 	tag, err := sw.substrate.NewRPC()
 	if err != nil {
 		return nil, err
 	}
-	return &SubstrateInstanceWrapperRPC{SubstrateInstanceWrapperCommon{substrate: sw.substrate, tag: tag}}, nil
+	return &substrateInstanceWrapperRPC{substrate: sw.substrate, tag: tag}, nil
 }
 
-func (siw *SubstrateInstanceWrapperRPC) Upcast() *SubstrateInstanceWrapperCommon {
-	return &SubstrateInstanceWrapperCommon{substrate: siw.substrate, tag: siw.tag}
+type substrateInstanceWrapperMock struct {
+	substrate substratecommon.Substrate
+	tag       string
 }
 
-func (siw *SubstrateInstanceWrapperRPC) CloseRPC() error {
-	return siw.substrate.CloseRPC(siw.tag)
-}
-
-func (sw *SubstrateWrapper) NewMockFrom(name string, phylumVersion string, blob []byte) (*SubstrateInstanceWrapperMock, error) {
+func (sw *substrateWrapper) NewMockFrom(name string, phylumVersion string, blob []byte) (SubstrateInstanceWrapperMock, error) {
 	tag, err := sw.substrate.NewMockFrom(name, phylumVersion, blob)
 	if err != nil {
 		return nil, err
 	}
-	return &SubstrateInstanceWrapperMock{SubstrateInstanceWrapperCommon{substrate: sw.substrate, tag: tag}}, nil
+	return &substrateInstanceWrapperMock{substrate: sw.substrate, tag: tag}, nil
 }
 
-func (siw *SubstrateInstanceWrapperMock) Upcast() *SubstrateInstanceWrapperCommon {
-	return &SubstrateInstanceWrapperCommon{substrate: siw.substrate, tag: siw.tag}
+func (siwr *substrateInstanceWrapperRPC) Close() error {
+	return siwr.substrate.CloseRPC(siwr.tag)
 }
 
-func (siw *SubstrateInstanceWrapperMock) SetCreatorWithAttributesMock(creator string, attrs map[string]string) error {
-	return siw.substrate.SetCreatorWithAttributesMock(siw.tag, creator, attrs)
+func (siwr *substrateInstanceWrapperRPC) NewCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperCoherent(siwr)
 }
 
-func (siw *SubstrateInstanceWrapperMock) SnapshotMock() ([]byte, error) {
-	return siw.substrate.SnapshotMock(siw.tag)
+func (siwr *substrateInstanceWrapperRPC) IsTimeoutError(err error) bool {
+	return siwr.substrate.IsTimeoutError(err)
 }
 
-func (siw *SubstrateInstanceWrapperMock) CloseMock() error {
-	return siw.substrate.CloseMock(siw.tag)
-}
-
-func (siw *SubstrateInstanceWrapperCommon) Init(phylum string, configs ...substratecommon.Config) error {
+func (siwr *substrateInstanceWrapperRPC) Init(phylum string, configs ...substratecommon.Config) error {
 	fo, err := substratecommon.FlattenOptions(configs...)
 	if err != nil {
 		return err
 	}
-	return siw.substrate.Init(siw.tag, phylum, fo)
+	return siwr.substrate.Init(siwr.tag, phylum, fo)
 }
 
-func (siw *SubstrateInstanceWrapperCommon) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
+func (siwr *substrateInstanceWrapperRPC) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
 	fo, err := substratecommon.FlattenOptions(configs...)
 	if err != nil {
 		return nil, err
 	}
-	return siw.substrate.Call(siw.tag, method, fo)
+	return siwr.substrate.Call(siwr.tag, method, fo)
 }
 
-func (siw *SubstrateInstanceWrapperCommon) QueryInfo(configs ...substratecommon.Config) (uint64, error) {
+func (siwr *substrateInstanceWrapperRPC) QueryInfo(configs ...substratecommon.Config) (uint64, error) {
 	fo, err := substratecommon.FlattenOptions(configs...)
 	if err != nil {
 		return 0, err
 	}
-	return siw.substrate.QueryInfo(siw.tag, fo)
+	return siwr.substrate.QueryInfo(siwr.tag, fo)
 }
 
-func (siw *SubstrateInstanceWrapperCommon) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
+func (siwr *substrateInstanceWrapperRPC) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
 	fo, err := substratecommon.FlattenOptions(configs...)
 	if err != nil {
 		return nil, err
 	}
-	return siw.substrate.QueryBlock(siw.tag, blockNumber, fo)
+	return siwr.substrate.QueryBlock(siwr.tag, blockNumber, fo)
 }
 
-func (siw *SubstrateInstanceWrapperCommon) IsTimeoutError(err error) bool {
-	return siw.substrate.IsTimeoutError(err)
+func (siwm *substrateInstanceWrapperMock) Close() error {
+	return siwm.substrate.CloseMock(siwm.tag)
+}
+
+func (siwm *substrateInstanceWrapperMock) NewCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperCoherent(siwm)
+}
+
+func (siwm *substrateInstanceWrapperMock) IsTimeoutError(err error) bool {
+	return siwm.substrate.IsTimeoutError(err)
+}
+
+func (siwm *substrateInstanceWrapperMock) SetCreatorWithAttributes(creator string, attrs map[string]string) error {
+	return siwm.substrate.SetCreatorWithAttributesMock(siwm.tag, creator, attrs)
+}
+
+func (siwm *substrateInstanceWrapperMock) Snapshot() ([]byte, error) {
+	return siwm.substrate.SnapshotMock(siwm.tag)
+}
+
+func (siwm *substrateInstanceWrapperMock) Init(phylum string, configs ...substratecommon.Config) error {
+	fo, err := substratecommon.FlattenOptions(configs...)
+	if err != nil {
+		return err
+	}
+	return siwm.substrate.Init(siwm.tag, phylum, fo)
+}
+
+func (siwm *substrateInstanceWrapperMock) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
+	fo, err := substratecommon.FlattenOptions(configs...)
+	if err != nil {
+		return nil, err
+	}
+	return siwm.substrate.Call(siwm.tag, method, fo)
+}
+
+func (siwm *substrateInstanceWrapperMock) QueryInfo(configs ...substratecommon.Config) (uint64, error) {
+	fo, err := substratecommon.FlattenOptions(configs...)
+	if err != nil {
+		return 0, err
+	}
+	return siwm.substrate.QueryInfo(siwm.tag, fo)
+}
+
+func (siwm *substrateInstanceWrapperMock) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
+	fo, err := substratecommon.FlattenOptions(configs...)
+	if err != nil {
+		return nil, err
+	}
+	return siwm.substrate.QueryBlock(siwm.tag, blockNumber, fo)
+}
+
+type substrateInstanceWrapperCoherent struct {
+	underlying SubstrateInstanceWrapperCommon
+	dependent  string
+}
+
+func (siwc *substrateInstanceWrapperCoherent) Close() error {
+	return siwc.underlying.Close()
+}
+
+func (siwc *substrateInstanceWrapperCoherent) NewCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperCoherent(siwc)
+}
+
+func (siwc *substrateInstanceWrapperCoherent) IsTimeoutError(err error) bool {
+	return siwc.underlying.IsTimeoutError(err)
+}
+
+func (siwc *substrateInstanceWrapperCoherent) Init(phylum string, configs ...substratecommon.Config) error {
+	return siwc.underlying.Init(phylum, configs...)
+}
+
+func (siwc *substrateInstanceWrapperCoherent) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
+	configs2 := configs
+	if siwc.dependent != "" {
+		configs2 = append(configs2, substratecommon.WithDependentTxID(siwc.dependent))
+	}
+	resp, err := siwc.underlying.Call(method, configs2...)
+	if err != nil {
+		return nil, err
+	}
+	siwc.dependent = resp.TransactionID
+	return resp, nil
+}
+
+func (siwc *substrateInstanceWrapperCoherent) QueryInfo(configs ...substratecommon.Config) (uint64, error) {
+	return siwc.underlying.QueryInfo(configs...)
+}
+
+func (siwc *substrateInstanceWrapperCoherent) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
+	return siwc.underlying.QueryBlock(blockNumber, configs...)
+}
+
+func NewSubstrateInstanceWrapperCoherent(siwc SubstrateInstanceWrapperCommon) SubstrateInstanceWrapperCommon {
+	return &substrateInstanceWrapperCoherent{underlying: siwc}
 }

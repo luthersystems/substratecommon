@@ -25,7 +25,7 @@ type Config func(*options)
 // chaincode accessed through an instance of ShiroClient.
 type Driver struct {
 	opt    *options
-	client *substratewrapper.SubstrateInstanceWrapperCommon
+	client substratewrapper.SubstrateInstanceWrapperCommon
 }
 
 // WithLog allows specifying the logger to use.
@@ -319,7 +319,7 @@ func (d *Driver) Register(ctx context.Context, batchName string, interval time.D
 
 // NewDriver returns a Driver that will use client as the underlying
 // ShiroClient.
-func NewDriver(client *substratewrapper.SubstrateInstanceWrapperCommon, configs ...Config) *Driver {
+func NewDriver(client substratewrapper.SubstrateInstanceWrapperCommon, configs ...Config) *Driver {
 	opt := &options{
 		log:       logrus.New(),
 		logFields: make(logrus.Fields),

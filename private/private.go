@@ -199,7 +199,7 @@ func WithTransientMXF(req *EncodeRequest) ([]substratecommon.Config, error) {
 // Encode encodes a sensitive "message" using "transforms".
 // If there no transforms, then encode simply returns a thin wrapper
 // over the encoded message bytes.
-func Encode(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, message interface{}, transforms []*Transform, configs ...substratecommon.Config) (*EncodedResponse, error) {
+func Encode(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, message interface{}, transforms []*Transform, configs ...substratecommon.Config) (*EncodedResponse, error) {
 	if len(transforms) == 0 {
 		// fast path, nothing to do.
 		rawBytes, err := json.Marshal(message)
@@ -238,7 +238,7 @@ func Encode(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapp
 
 // Decode decodes a message that was encoded with transforms. If there are
 // no transforms, then decode unmarshals the raw message bytes into "decoded".
-func Decode(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, encoded *EncodedResponse, decoded interface{}, configs ...substratecommon.Config) error {
+func Decode(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, encoded *EncodedResponse, decoded interface{}, configs ...substratecommon.Config) error {
 	if encoded == nil {
 		return fmt.Errorf("nil encoded message")
 	}
@@ -274,7 +274,7 @@ func Decode(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapp
 
 // Export exports all sensitive data on the blockchain pertaining to a data
 // subject with data subject ID "dsid".
-func Export(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, dsid DSID, exported map[string]interface{}, configs ...substratecommon.Config) error {
+func Export(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, dsid DSID, exported map[string]interface{}, configs ...substratecommon.Config) error {
 	if dsid == "" {
 		return fmt.Errorf("invalid empty DSID")
 	}
@@ -295,7 +295,7 @@ func Export(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapp
 
 // Purge removes all sensitive data on the blockchain pertaining to a data
 // subject with data subject ID "dsid".
-func Purge(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, dsid DSID, configs ...substratecommon.Config) error {
+func Purge(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, dsid DSID, configs ...substratecommon.Config) error {
 	if dsid == "" {
 		return fmt.Errorf("invalid empty DSID")
 	}
@@ -324,7 +324,7 @@ func Purge(ctx context.Context, client *substratewrapper.SubstrateInstanceWrappe
 }
 
 // ProfileToDSID returns a DSID for a data subject profile.
-func ProfileToDSID(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, profile interface{}, configs ...substratecommon.Config) (DSID, error) {
+func ProfileToDSID(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, profile interface{}, configs ...substratecommon.Config) (DSID, error) {
 	configs = append(configs, WithParam(profile))
 	resp, err := client.Call(ShiroEndpointProfileToDSID, configs...)
 	if err != nil {
@@ -348,7 +348,7 @@ func ProfileToDSID(ctx context.Context, client *substratewrapper.SubstrateInstan
 // overwriting the transient data fields.
 // IMPORTANT: The wrapper assumes the wrapped endpoint only takes a single
 // argument!
-func WrapCall(ctx context.Context, client *substratewrapper.SubstrateInstanceWrapperCommon, method string, encTransforms ...*Transform) func(message interface{}, output interface{}, configs ...substratecommon.Config) error {
+func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, method string, encTransforms ...*Transform) func(message interface{}, output interface{}, configs ...substratecommon.Config) error {
 	return func(message interface{}, output interface{}, configs ...substratecommon.Config) error {
 		encReq, err := Encode(ctx, client, message, encTransforms, configs...)
 		if err != nil {
