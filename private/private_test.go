@@ -13,11 +13,11 @@ import (
 func TestPrivate(t *testing.T) {
 	var tests = []struct {
 		Name string
-		Func func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon)
+		Func func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon)
 	}{
 		{
 			Name: "export missing",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				var exportedData map[string]interface{}
 				err := private.Export(context.Background(), client, "DSID-missing", exportedData)
 				if err == nil {
@@ -27,7 +27,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "purge missing",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				err := private.Purge(context.Background(), client, "DSID-missing")
 				if err == nil {
 					t.Fatal("expected error")
@@ -36,7 +36,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "profile to missing DSID",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				_, err := private.ProfileToDSID(context.Background(), client, []string{"profile-missing"})
 				if err == nil {
 					t.Fatal("expected error")
@@ -45,7 +45,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "encode zero transforms",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string
 					Fnord string
@@ -62,7 +62,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "encode and decode (zero transforms)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -90,7 +90,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "encode and decode (1 transform)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -127,7 +127,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "wrap",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -165,7 +165,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "no wrap (encode/decode passthrough)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -191,7 +191,7 @@ func TestPrivate(t *testing.T) {
 		{
 			// IMPORTANT: this test must run after `wrap`!
 			Name: "partial wrap (no encode, yes decode)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -216,7 +216,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "partial wrap (yes encode, no decode)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -250,7 +250,7 @@ func TestPrivate(t *testing.T) {
 		},
 		{
 			Name: "wrap error (no IV)",
-			Func: func(t *testing.T, client *substratewrapper.SubstrateInstanceWrapperCommon) {
+			Func: func(t *testing.T, client substratewrapper.SubstrateInstanceWrapperCommon) {
 				message := struct {
 					Hello string `json:"hello"`
 					Fnord string `json:"fnord"`
@@ -325,11 +325,11 @@ func TestPrivate(t *testing.T) {
 			for _, tc := range tests {
 				t.Run(tc.Name, func(t *testing.T) {
 					t.Logf("running: %s\n", tc.Name)
-					tc.Func(t, siwm.Upcast())
+					tc.Func(t, siwm)
 				})
 			}
 
-			return siwm.CloseMock()
+			return siwm.Close()
 		},
 		substratecommon.ConnectWithCommand(os.Getenv("SUBSTRATEHCP_FILE")))
 	if err != nil {
