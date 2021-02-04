@@ -1,6 +1,7 @@
 package substratewrapper
 
 import (
+	"context"
 	"io"
 
 	"github.com/luthersystems/substratecommon"
@@ -14,6 +15,7 @@ type SubstrateWrapper interface {
 type SubstrateInstanceWrapperCommon interface {
 	io.Closer
 	NewCoherent() SubstrateInstanceWrapperCommon
+	NewContextCoherent() SubstrateInstanceWrapperCommon
 	IsTimeoutError(err error) bool
 	Init(phylum string, configs ...substratecommon.Config) error
 	Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error)
@@ -74,6 +76,10 @@ func (siwr *substrateInstanceWrapperRPC) NewCoherent() SubstrateInstanceWrapperC
 	return NewSubstrateInstanceWrapperCoherent(siwr)
 }
 
+func (siwr *substrateInstanceWrapperRPC) NewContextCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperContextCoherent(siwr)
+}
+
 func (siwr *substrateInstanceWrapperRPC) IsTimeoutError(err error) bool {
 	return siwr.substrate.IsTimeoutError(err)
 }
@@ -120,6 +126,10 @@ func (siwm *substrateInstanceWrapperMock) Close() error {
 
 func (siwm *substrateInstanceWrapperMock) NewCoherent() SubstrateInstanceWrapperCommon {
 	return NewSubstrateInstanceWrapperCoherent(siwm)
+}
+
+func (siwm *substrateInstanceWrapperMock) NewContextCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperContextCoherent(siwm)
 }
 
 func (siwm *substrateInstanceWrapperMock) IsTimeoutError(err error) bool {
@@ -183,6 +193,10 @@ func (siwc *substrateInstanceWrapperCoherent) NewCoherent() SubstrateInstanceWra
 	return NewSubstrateInstanceWrapperCoherent(siwc)
 }
 
+func (siwc *substrateInstanceWrapperCoherent) NewContextCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperContextCoherent(siwc)
+}
+
 func (siwc *substrateInstanceWrapperCoherent) IsTimeoutError(err error) bool {
 	return siwc.underlying.IsTimeoutError(err)
 }
@@ -218,4 +232,87 @@ func (siwc *substrateInstanceWrapperCoherent) GetLastTransactionID() string {
 
 func NewSubstrateInstanceWrapperCoherent(siwc SubstrateInstanceWrapperCommon) SubstrateInstanceWrapperCommon {
 	return &substrateInstanceWrapperCoherent{underlying: siwc}
+}
+
+type key int
+
+const (
+	// DependentTransactionKey is the key for the context value that stores the DependentWrapper struct
+	dependentKey key = iota
+)
+
+type dependentWrapper struct {
+	dependent string
+}
+
+func ContextWithTransactionID(ctx context.Context) context.Context {
+	return context.WithValue(ctx, dependentKey, &dependentWrapper{})
+}
+
+func GetContextTransactionID(ctx context.Context) string {
+	dw, ok := ctx.Value(dependentKey).(*dependentWrapper)
+	if ok {
+		return dw.dependent
+	}
+	return ""
+}
+
+type substrateInstanceWrapperContextCoherent struct {
+	underlying SubstrateInstanceWrapperCommon
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) Close() error {
+	return siwc.underlying.Close()
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) NewCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperCoherent(siwc)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) NewContextCoherent() SubstrateInstanceWrapperCommon {
+	return NewSubstrateInstanceWrapperContextCoherent(siwc)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) IsTimeoutError(err error) bool {
+	return siwc.underlying.IsTimeoutError(err)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) Init(phylum string, configs ...substratecommon.Config) error {
+	return siwc.underlying.Init(phylum, configs...)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
+	configs2 := configs
+	ctx, err := substratecommon.FlattenContext(configs...)
+	if err != nil {
+		ctx = context.Background()
+	}
+	dw, ok := ctx.Value(dependentKey).(*dependentWrapper)
+	if ok && dw.dependent != "" {
+		configs2 = append(configs2, substratecommon.WithDependentTxID(dw.dependent))
+	}
+	resp, err := siwc.underlying.Call(method, configs2...)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		dw.dependent = resp.TransactionID
+	}
+	return resp, nil
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) QueryInfo(configs ...substratecommon.Config) (uint64, error) {
+	return siwc.underlying.QueryInfo(configs...)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
+	return siwc.underlying.QueryBlock(blockNumber, configs...)
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) GetLastTransactionID() string {
+	return ""
+}
+
+func NewSubstrateInstanceWrapperContextCoherent(siwc SubstrateInstanceWrapperCommon) SubstrateInstanceWrapperCommon {
+	return &substrateInstanceWrapperContextCoherent{underlying: siwc}
 }

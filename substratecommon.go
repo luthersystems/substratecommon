@@ -284,6 +284,22 @@ func FlattenOptions(configs ...Config) (*ConcreteRequestOptions, error) {
 	}, nil
 }
 
+// FlattenContext will return the context selected by a list of config
+// options.
+func FlattenContext(configs ...Config) (context.Context, error) {
+	opt := &RequestOptions{}
+
+	for _, config := range configs {
+		config(opt)
+	}
+
+	if opt.Ctx == nil {
+		return nil, fmt.Errorf("expected context")
+	}
+
+	return opt.Ctx, nil
+}
+
 // Error represents a possible error. IsTimeoutError indicates whether
 // the error was a timeout error.
 type Error struct {
