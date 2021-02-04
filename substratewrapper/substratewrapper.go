@@ -19,6 +19,7 @@ type SubstrateInstanceWrapperCommon interface {
 	Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error)
 	QueryInfo(configs ...substratecommon.Config) (uint64, error)
 	QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error)
+	GetLastTransactionID() string
 }
 
 type SubstrateInstanceWrapperRPC interface {
@@ -109,6 +110,10 @@ func (siwr *substrateInstanceWrapperRPC) QueryBlock(blockNumber uint64, configs 
 	return siwr.substrate.QueryBlock(siwr.tag, blockNumber, fo)
 }
 
+func (siwr *substrateInstanceWrapperRPC) GetLastTransactionID() string {
+	return ""
+}
+
 func (siwm *substrateInstanceWrapperMock) Close() error {
 	return siwm.substrate.CloseMock(siwm.tag)
 }
@@ -161,6 +166,10 @@ func (siwm *substrateInstanceWrapperMock) QueryBlock(blockNumber uint64, configs
 	return siwm.substrate.QueryBlock(siwm.tag, blockNumber, fo)
 }
 
+func (siwm *substrateInstanceWrapperMock) GetLastTransactionID() string {
+	return ""
+}
+
 type substrateInstanceWrapperCoherent struct {
 	underlying SubstrateInstanceWrapperCommon
 	dependent  string
@@ -201,6 +210,10 @@ func (siwc *substrateInstanceWrapperCoherent) QueryInfo(configs ...substratecomm
 
 func (siwc *substrateInstanceWrapperCoherent) QueryBlock(blockNumber uint64, configs ...substratecommon.Config) (*substratecommon.Block, error) {
 	return siwc.underlying.QueryBlock(blockNumber, configs...)
+}
+
+func (siwc *substrateInstanceWrapperCoherent) GetLastTransactionID() string {
+	return siwc.dependent
 }
 
 func NewSubstrateInstanceWrapperCoherent(siwc SubstrateInstanceWrapperCommon) SubstrateInstanceWrapperCommon {
