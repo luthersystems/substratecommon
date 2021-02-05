@@ -287,7 +287,12 @@ func FlattenOptions(configs ...Config) (*ConcreteRequestOptions, error) {
 // FlattenContext will return the context selected by a list of config
 // options.
 func FlattenContext(configs ...Config) (context.Context, error) {
-	opt := &RequestOptions{}
+	opt := &RequestOptions{
+		LogFields: logrus.Fields{},
+		Headers:   map[string]string{},
+		Transient: map[string][]byte{},
+		Params:    []interface{}{},
+	}
 
 	for _, config := range configs {
 		config(opt)
