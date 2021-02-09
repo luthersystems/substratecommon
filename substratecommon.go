@@ -351,6 +351,8 @@ type Block struct {
 
 // Substrate is the interface that we're exposing as a plugin.
 type Substrate interface {
+	HealthCheck(int) (int, error)
+
 	NewRPC() (string, error)
 	CloseRPC(string) error
 
@@ -366,6 +368,16 @@ type Substrate interface {
 
 	// IsTimeoutError doesn't use RPC
 	IsTimeoutError(err error) bool
+}
+
+// ArgsHealthCheck encodes the arguments to HealthCheck
+type ArgsHealthCheck struct {
+	Nat int
+}
+
+// RespHealthCheck encodes the response from HealthCheck
+type RespHealthCheck struct {
+	Suc int
 }
 
 // ArgsNewRPC encodes the arguments to NewRPC
@@ -488,6 +500,16 @@ type RespQueryBlock struct {
 type PluginRPC struct{ client *rpc.Client }
 
 var errRPC = fmt.Errorf("RPC failure")
+
+// HealthCheck forwards the call
+func (g *PluginRPC) HealthCheck(nat int) (int, error) {
+	var resp RespHealthCheck
+	err := g.client.Call("Plugin.HealthCheck", &ArgsHealthCheck{Nat: nat}, &resp)
+	if err != nil {
+		return 0, errRPC
+	}
+	return resp.Suc, nil
+}
 
 // NewRPC forwards the call
 func (g *PluginRPC) NewRPC() (string, error) {
