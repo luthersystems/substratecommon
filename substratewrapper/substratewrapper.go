@@ -14,6 +14,7 @@ type SubstrateWrapper interface {
 
 type SubstrateInstanceWrapperCommon interface {
 	io.Closer
+	HealthCheck(x int) (int, error)
 	NewCoherent() SubstrateInstanceWrapperCommon
 	NewContextCoherent() SubstrateInstanceWrapperCommon
 	IsTimeoutError(err error) bool
@@ -72,6 +73,10 @@ func (siwr *substrateInstanceWrapperRPC) Close() error {
 	return siwr.substrate.CloseRPC(siwr.tag)
 }
 
+func (siwr *substrateInstanceWrapperRPC) HealthCheck(x int) (int, error) {
+	return siwr.substrate.HealthCheck(x)
+}
+
 func (siwr *substrateInstanceWrapperRPC) NewCoherent() SubstrateInstanceWrapperCommon {
 	return NewSubstrateInstanceWrapperCoherent(siwr)
 }
@@ -122,6 +127,10 @@ func (siwr *substrateInstanceWrapperRPC) GetLastTransactionID() string {
 
 func (siwm *substrateInstanceWrapperMock) Close() error {
 	return siwm.substrate.CloseMock(siwm.tag)
+}
+
+func (siwm *substrateInstanceWrapperMock) HealthCheck(x int) (int, error) {
+	return siwm.substrate.HealthCheck(x)
 }
 
 func (siwm *substrateInstanceWrapperMock) NewCoherent() SubstrateInstanceWrapperCommon {
@@ -187,6 +196,10 @@ type substrateInstanceWrapperCoherent struct {
 
 func (siwc *substrateInstanceWrapperCoherent) Close() error {
 	return siwc.underlying.Close()
+}
+
+func (siwc *substrateInstanceWrapperCoherent) HealthCheck(x int) (int, error) {
+	return siwc.underlying.HealthCheck(x)
 }
 
 func (siwc *substrateInstanceWrapperCoherent) NewCoherent() SubstrateInstanceWrapperCommon {
@@ -263,6 +276,10 @@ type substrateInstanceWrapperContextCoherent struct {
 
 func (siwc *substrateInstanceWrapperContextCoherent) Close() error {
 	return siwc.underlying.Close()
+}
+
+func (siwc *substrateInstanceWrapperContextCoherent) HealthCheck(x int) (int, error) {
+	return siwc.underlying.HealthCheck(x)
 }
 
 func (siwc *substrateInstanceWrapperContextCoherent) NewCoherent() SubstrateInstanceWrapperCommon {
