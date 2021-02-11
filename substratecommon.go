@@ -661,6 +661,16 @@ func (s *PluginRPCServer) newError(err error) *Error {
 	return &Error{IsTimeoutError: b, Diagnostic: err.Error()}
 }
 
+// HealthCheck forwards the call
+func (s *PluginRPCServer) HealthCheck(args *ArgsHealthCheck, resp *RespHealthCheck) error {
+	val, err := s.Impl.HealthCheck(args.Nat)
+	if err != nil {
+		val = -1
+	}
+	resp.Suc = val
+	return nil
+}
+
 // NewRPC forwards the call
 func (s *PluginRPCServer) NewRPC(args *ArgsNewRPC, resp *RespNewRPC) error {
 	tag, err := s.Impl.NewRPC()
