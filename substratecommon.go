@@ -631,7 +631,7 @@ func (g *PluginRPC) QueryInfo(tag string, options *ConcreteRequestOptions) (uint
 // QueryBlock forwards the call
 func (g *PluginRPC) QueryBlock(tag string, height uint64, options *ConcreteRequestOptions) (*Block, error) {
 	var resp RespQueryBlock
-	err := g.client.Call("Plugin.QueryInfo", &ArgsQueryBlock{Tag: tag, Height: height, Options: options}, &resp)
+	err := g.client.Call("Plugin.QueryBlock", &ArgsQueryBlock{Tag: tag, Height: height, Options: options}, &resp)
 	if err != nil {
 		return nil, errRPC
 	}
