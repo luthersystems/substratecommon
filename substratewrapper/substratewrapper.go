@@ -221,7 +221,7 @@ func (siwc *substrateInstanceWrapperCoherent) Init(phylum string, configs ...sub
 func (siwc *substrateInstanceWrapperCoherent) Call(method string, configs ...substratecommon.Config) (*substratecommon.Response, error) {
 	configs2 := configs
 	if siwc.dependent != "" {
-		configs2 = append(configs2, substratecommon.WithDependentTxID(siwc.dependent))
+		configs2 = append(configs2, substratecommon.WithConditionalDependentTxID(siwc.dependent))
 	}
 	resp, err := siwc.underlying.Call(method, configs2...)
 	if err != nil {
