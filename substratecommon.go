@@ -499,14 +499,12 @@ type RespQueryBlock struct {
 // PluginRPC is an implementation that talks over RPC
 type PluginRPC struct{ client *rpc.Client }
 
-var errRPC = fmt.Errorf("RPC failure")
-
 // HealthCheck forwards the call
 func (g *PluginRPC) HealthCheck(nat int) (int, error) {
 	var resp RespHealthCheck
 	err := g.client.Call("Plugin.HealthCheck", &ArgsHealthCheck{Nat: nat}, &resp)
 	if err != nil {
-		return 0, errRPC
+		return 0, err
 	}
 	return resp.Suc, nil
 }
@@ -516,7 +514,7 @@ func (g *PluginRPC) NewRPC() (string, error) {
 	var resp RespNewRPC
 	err := g.client.Call("Plugin.NewRPC", &ArgsNewRPC{}, &resp)
 	if err != nil {
-		return "", errRPC
+		return "", err
 	}
 	if resp.Err != nil {
 		return "", resp.Err
@@ -529,7 +527,7 @@ func (g *PluginRPC) CloseRPC(tag string) error {
 	var resp RespCloseRPC
 	err := g.client.Call("Plugin.CloseRPC", &ArgsCloseRPC{Tag: tag}, &resp)
 	if err != nil {
-		return errRPC
+		return err
 	}
 	if resp.Err != nil {
 		return resp.Err
@@ -542,7 +540,7 @@ func (g *PluginRPC) NewMockFrom(name string, version string, snapshot []byte) (s
 	var resp RespNewMockFrom
 	err := g.client.Call("Plugin.NewMockFrom", &ArgsNewMockFrom{Name: name, Version: version, Snapshot: snapshot}, &resp)
 	if err != nil {
-		return "", errRPC
+		return "", err
 	}
 	if resp.Err != nil {
 		return "", resp.Err
@@ -555,7 +553,7 @@ func (g *PluginRPC) SetCreatorWithAttributesMock(tag string, creator string, att
 	var resp RespSetCreatorWithAttributesMock
 	err := g.client.Call("Plugin.SetCreatorWithAttributesMock", &ArgsSetCreatorWithAttributesMock{Tag: tag, Creator: creator, Attrs: attrs}, &resp)
 	if err != nil {
-		return errRPC
+		return err
 	}
 	if resp.Err != nil {
 		return resp.Err
@@ -568,7 +566,7 @@ func (g *PluginRPC) SnapshotMock(tag string) ([]byte, error) {
 	var resp RespSnapshotMock
 	err := g.client.Call("Plugin.SnapshotMock", &ArgsSnapshotMock{Tag: tag}, &resp)
 	if err != nil {
-		return nil, errRPC
+		return nil, err
 	}
 	if resp.Err != nil {
 		return nil, resp.Err
@@ -581,7 +579,7 @@ func (g *PluginRPC) CloseMock(tag string) error {
 	var resp RespCloseMock
 	err := g.client.Call("Plugin.CloseMock", &ArgsCloseMock{Tag: tag}, &resp)
 	if err != nil {
-		return errRPC
+		return err
 	}
 	if resp.Err != nil {
 		return resp.Err
@@ -594,7 +592,7 @@ func (g *PluginRPC) Init(tag string, phylum string, options *ConcreteRequestOpti
 	var resp RespInit
 	err := g.client.Call("Plugin.Init", &ArgsInit{Tag: tag, Phylum: phylum, Options: options}, &resp)
 	if err != nil {
-		return errRPC
+		return err
 	}
 	if resp.Err != nil {
 		return resp.Err
@@ -607,7 +605,7 @@ func (g *PluginRPC) Call(tag string, command string, options *ConcreteRequestOpt
 	var resp RespCall
 	err := g.client.Call("Plugin.Call", &ArgsCall{Tag: tag, Command: command, Options: options}, &resp)
 	if err != nil {
-		return nil, errRPC
+		return nil, err
 	}
 	if resp.Err != nil {
 		return nil, resp.Err
@@ -620,7 +618,7 @@ func (g *PluginRPC) QueryInfo(tag string, options *ConcreteRequestOptions) (uint
 	var resp RespQueryInfo
 	err := g.client.Call("Plugin.QueryInfo", &ArgsQueryInfo{Tag: tag, Options: options}, &resp)
 	if err != nil {
-		return 0, errRPC
+		return 0, err
 	}
 	if resp.Err != nil {
 		return 0, resp.Err
@@ -633,7 +631,7 @@ func (g *PluginRPC) QueryBlock(tag string, height uint64, options *ConcreteReque
 	var resp RespQueryBlock
 	err := g.client.Call("Plugin.QueryBlock", &ArgsQueryBlock{Tag: tag, Height: height, Options: options}, &resp)
 	if err != nil {
-		return nil, errRPC
+		return nil, err
 	}
 	if resp.Err != nil {
 		return nil, resp.Err
