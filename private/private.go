@@ -361,13 +361,10 @@ func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrap
 			return fmt.Errorf("wrap encode error: %s", err)
 		}
 		configs = append([]substratecommon.Config{WithParam(encodingResponse)}, configs...)
-		var wrapCallConfigs []substratecommon.Config
 		if encodingResponse.encodeTransactionID != "" {
-			wrapCallConfigs = append(configs, substratecommon.WithDependentTxID(encodingResponse.encodeTransactionID))
-		} else {
-			wrapCallConfigs = configs
+			configs = append(configs, substratecommon.WithDependentTxID(encodingResponse.encodeTransactionID))
 		}
-		resp, err := client.Call(method, wrapCallConfigs...)
+		resp, err := client.Call(method, configs...)
 		if err != nil {
 			return fmt.Errorf("wrap call error: %s", err)
 		}
@@ -379,13 +376,10 @@ func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrap
 		if err != nil {
 			return err
 		}
-		var decodeConfigs []substratecommon.Config
 		if resp.TransactionID != "" {
-			decodeConfigs = append(configs, substratecommon.WithDependentTxID(resp.TransactionID))
-		} else {
-			decodeConfigs = configs
+			configs = append(configs, substratecommon.WithDependentTxID(resp.TransactionID))
 		}
-		err = Decode(ctx, client, encodedResult, output, decodeConfigs...)
+		err = Decode(ctx, client, encodedResult, output, configs...)
 		if err != nil {
 			return fmt.Errorf("wrap decode error: %s", err)
 		}
