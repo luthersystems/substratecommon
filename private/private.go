@@ -203,6 +203,9 @@ func WithTransientMXF(req *EncodeRequest) ([]substratecommon.Config, error) {
 // If there no transforms, then encode simply returns a thin wrapper
 // over the encoded message bytes.
 func Encode(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, message interface{}, transforms []*Transform, configs ...substratecommon.Config) (*EncodedResponse, error) {
+	if message == nil {
+		return nil, nil
+	}
 	if len(transforms) == 0 {
 		// fast path, nothing to do.
 		rawBytes, err := json.Marshal(message)
@@ -360,9 +363,12 @@ func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrap
 		if err != nil {
 			return fmt.Errorf("wrap encode error: %s", err)
 		}
-		configs = append([]substratecommon.Config{WithParam(encodingResponse)}, configs...)
-		if encodingResponse.encodeTransactionID != "" {
-			configs = append(configs, substratecommon.WithDependentTxID(encodingResponse.encodeTransactionID))
+		if encodingResponse != nil {
+			// Override prior configs
+			configs = append(configs, WithParam(encodingResponse))
+			if encodingResponse.encodeTransactionID != "" {
+				configs = append(configs, substratecommon.WithDependentTxID(encodingResponse.encodeTransactionID))
+			}
 		}
 		resp, err := client.Call(method, configs...)
 		if err != nil {
