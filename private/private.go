@@ -131,6 +131,9 @@ type EncodedResponse struct {
 	// RawMessage is only set to the raw response if encode did not actually
 	// perform any encoding.
 	rawMessage *json.RawMessage
+	// encodeTransactionID (optional) specifies the Tx ID of the Encode call so
+	// that further transactions can set a dependency on it.
+	encodeTransactionID string
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -200,6 +203,9 @@ func WithTransientMXF(req *EncodeRequest) ([]substratecommon.Config, error) {
 // If there no transforms, then encode simply returns a thin wrapper
 // over the encoded message bytes.
 func Encode(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, message interface{}, transforms []*Transform, configs ...substratecommon.Config) (*EncodedResponse, error) {
+	if message == nil {
+		return nil, nil
+	}
 	if len(transforms) == 0 {
 		// fast path, nothing to do.
 		rawBytes, err := json.Marshal(message)
@@ -232,6 +238,9 @@ func Encode(ctx context.Context, client substratewrapper.SubstrateInstanceWrappe
 	err = resp.UnmarshalTo(enc)
 	if err != nil {
 		return nil, err
+	}
+	if resp.TransactionID != "" {
+		enc.encodeTransactionID = resp.TransactionID
 	}
 	return enc, nil
 }
@@ -350,11 +359,17 @@ func ProfileToDSID(ctx context.Context, client substratewrapper.SubstrateInstanc
 // argument!
 func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrapperCommon, method string, encTransforms ...*Transform) func(message interface{}, output interface{}, configs ...substratecommon.Config) error {
 	return func(message interface{}, output interface{}, configs ...substratecommon.Config) error {
-		encReq, err := Encode(ctx, client, message, encTransforms, configs...)
+		encodingResponse, err := Encode(ctx, client, message, encTransforms, configs...)
 		if err != nil {
 			return fmt.Errorf("wrap encode error: %s", err)
 		}
-		configs = append([]substratecommon.Config{WithParam(encReq)}, configs...)
+		if encodingResponse != nil {
+			// Override prior configs
+			configs = append(configs, WithParam(encodingResponse))
+			if encodingResponse.encodeTransactionID != "" {
+				configs = append(configs, substratecommon.WithDependentTxID(encodingResponse.encodeTransactionID))
+			}
+		}
 		resp, err := client.Call(method, configs...)
 		if err != nil {
 			return fmt.Errorf("wrap call error: %s", err)
@@ -362,12 +377,15 @@ func WrapCall(ctx context.Context, client substratewrapper.SubstrateInstanceWrap
 		if resp.HasError {
 			return fmt.Errorf("wrap call response error: %s", resp.ErrorMessage)
 		}
-		encResp := &EncodedResponse{}
-		err = resp.UnmarshalTo(encResp)
+		encodedResult := &EncodedResponse{}
+		err = resp.UnmarshalTo(encodedResult)
 		if err != nil {
 			return err
 		}
-		err = Decode(ctx, client, encResp, output, configs...)
+		if resp.TransactionID != "" {
+			configs = append(configs, substratecommon.WithDependentTxID(resp.TransactionID))
+		}
+		err = Decode(ctx, client, encodedResult, output, configs...)
 		if err != nil {
 			return fmt.Errorf("wrap decode error: %s", err)
 		}
