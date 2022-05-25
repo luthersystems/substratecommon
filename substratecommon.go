@@ -13,12 +13,13 @@ import (
 	"os/exec"
 	"time"
 
+	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
 	"github.com/golang/protobuf/jsonpb"
+	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
 	"github.com/golang/protobuf/proto"
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
-
-	hclog "github.com/hashicorp/go-hclog"
 )
 
 // ConcreteRequestOptions is a variant of RequestOptions that is

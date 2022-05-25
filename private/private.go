@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
+	"github.com/golang/protobuf/jsonpb"
+	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
+	"github.com/golang/protobuf/proto"
 	"github.com/luthersystems/substratecommon"
 	"github.com/luthersystems/substratecommon/substratewrapper"
-
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
