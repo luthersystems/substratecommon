@@ -8,7 +8,6 @@
 # PROEJECT and VERSION are attached to docker images and phylum deployment
 # artifacts created during the build process.
 PROJECT=substratecommon
-VERSION=0.1.0-SNAPSHOT
 
 # These variables control the version numbers for parts of the LEIA platform
 # and should be kept up-to-date to leverage the latest platform features.
