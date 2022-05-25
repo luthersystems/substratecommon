@@ -873,11 +873,13 @@ func NewSubstrateConnection(opts ...ConnectOption) (*SubstrateConnection, error)
 		Level:  co.level,
 	})
 
+	cmd := exec.Command(co.command) // #nosec G204
+
 	// We're a host! Start by launching the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
-		Cmd:             exec.Command(co.command),
+		Cmd:             cmd,
 		Logger:          logger,
 		Stderr:          co.attachStdamp,
 		SyncStdout:      co.attachStdamp,
