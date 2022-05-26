@@ -1,7 +1,6 @@
 package substratecommon
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -13,13 +12,11 @@ import (
 	"os/exec"
 	"time"
 
-	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
-	"github.com/golang/protobuf/jsonpb"
-	//lint:ignore SA1019 we are not ready to upgrade proto lib yet
-	"github.com/golang/protobuf/proto"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // ConcreteRequestOptions is a variant of RequestOptions that is
@@ -331,7 +328,7 @@ type Response struct {
 func (s *Response) UnmarshalTo(dst interface{}) error {
 	message, ok := dst.(proto.Message)
 	if ok {
-		return jsonpb.Unmarshal(bytes.NewReader([]byte(s.ResultJSON)), message)
+		return protojson.Unmarshal([]byte(s.ResultJSON), message)
 	}
 	return json.Unmarshal([]byte(s.ResultJSON), dst)
 }
