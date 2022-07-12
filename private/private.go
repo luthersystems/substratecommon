@@ -256,13 +256,21 @@ func Decode(ctx context.Context, client substratewrapper.SubstrateInstanceWrappe
 		}
 		rawBytes, err := json.Marshal(encoded.rawMessage)
 		if err != nil {
-			return err
+			return fmt.Errorf("wrap marshal error: %s", err)
 		}
 		message, ok := decoded.(proto.Message)
 		if ok {
-			return protojson.Unmarshal(rawBytes, message)
+			err := protojson.Unmarshal(rawBytes, message)
+			if err != nil {
+				return fmt.Errorf("wrap protojson unmarshal error: %s", err)
+			}
+			return nil
 		}
-		return json.Unmarshal(rawBytes, decoded)
+		err = json.Unmarshal(rawBytes, decoded)
+		if err != nil {
+			return fmt.Errorf("wrap json unmarshal error: %s", err)
+		}
+		return nil
 	}
 	configs = append(configs, WithParam(encoded.encodedMessage))
 	resp, err := client.Call(ShiroEndpointDecode, configs...)
