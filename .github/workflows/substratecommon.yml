@@ -13,6 +13,6 @@ jobs:
     - name: Set license file
       run: echo $LUTHER_LICENSE | base64 -d > .luther-license.yaml
       env:
-        LUTHER_LICENSE: ${{ secrets.LutherLicense }}
+        LUTHER_LICENSE: ${{ secrets.LUTHER_LICENSE }}
     - name: Run CI tests
       run: make citest
