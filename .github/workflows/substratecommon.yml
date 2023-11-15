@@ -5,17 +5,14 @@ on:
     - main
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     container:
-      image: luthersystems/build-go:v0.0.76
+      image: luthersystems/build-go:v0.0.71
     steps:
     - uses: actions/checkout@v3.5.0
-      with:
-        lfs: true
-        fetch-depth: 0 # include tags for VERSION detection
     - name: Set license file
       run: echo $LUTHER_LICENSE | base64 -d > .luther-license.yaml
       env:
         LUTHER_LICENSE: ${{ secrets.LUTHER_LICENSE }}
     - name: Run CI tests
-      run: make citest
+      run: script -q -e -c "make citest"
