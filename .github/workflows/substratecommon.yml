@@ -5,9 +5,9 @@ on:
     - main
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
-      image: luthersystems/build-go:0.0.51
+      image: luthersystems/build-go:v0.0.71
     steps:
     - uses: actions/checkout@v3.5.0
     - name: Set license file
@@ -15,4 +15,4 @@ jobs:
       env:
         LUTHER_LICENSE: ${{ secrets.LUTHER_LICENSE }}
     - name: Run CI tests
-      run: make citest
+      run: script -q -e -c "make citest"
