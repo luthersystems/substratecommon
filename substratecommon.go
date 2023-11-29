@@ -1,7 +1,6 @@
 package substratecommon
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"log"
@@ -442,12 +441,6 @@ func (p *Plugin) Server(*plugin.MuxBroker) (interface{}, error) {
 // over an RPC client. We return PluginRPC for this.
 func (Plugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
 	return &PluginRPC{client: c}, nil
-}
-
-// EncodePhylumBytes encodes a phylum in the manner expected by
-// mock substrate.
-func EncodePhylumBytes(phylum string) string {
-	return base64.StdEncoding.EncodeToString([]byte(phylum))
 }
 
 // handshakeConfigs are used to just do a basic handshake between
